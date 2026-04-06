@@ -196,6 +196,10 @@ impl InnerIsolateState {
 
       let isolate = ManuallyDrop::take(&mut self.v8_isolate);
 
+      // `extensions` is a plain Vec<&'static str> (not ManuallyDrop), so
+      // mem::forget below would leak its heap backing buffer. Drop it first.
+      drop(std::mem::take(&mut self.extensions));
+
       std::mem::forget(self);
 
       isolate
