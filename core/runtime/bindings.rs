@@ -974,6 +974,8 @@ fn catch_dynamic_import_promise_error<'s, 'i>(
           format!("{} at {location}", message.to_rust_string_lossy(scope));
         message = v8::String::new(scope, &str).unwrap();
       }
+      let code_key = CODE.v8_string(scope).unwrap();
+      let existing_code = arg.get(scope, code_key.into());
       let exception = match name.as_str() {
         deno_error::builtin_classes::RANGE_ERROR => {
           v8::Exception::range_error(scope, message)
@@ -989,10 +991,11 @@ fn catch_dynamic_import_promise_error<'s, 'i>(
         }
         _ => v8::Exception::error(scope, message),
       };
-      let code_key = CODE.v8_string(scope).unwrap();
-      let code_value = ERR_MODULE_NOT_FOUND.v8_string(scope).unwrap();
+      let code_value = existing_code.unwrap_or_else(|| {
+        ERR_MODULE_NOT_FOUND.v8_string(scope).unwrap().into()
+      });
       let exception_obj = exception.to_object(scope).unwrap();
-      exception_obj.set(scope, code_key.into(), code_value.into());
+      exception_obj.set(scope, code_key.into(), code_value);
       scope.throw_exception(exception);
       return;
     }
