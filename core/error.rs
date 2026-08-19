@@ -236,6 +236,18 @@ impl CoreErrorKind {
 
     let exception =
       js_class_and_message_to_exception(scope, &self.get_class(), &message);
+    if let Ok(exception_obj) = v8::Local::<v8::Object>::try_from(exception) {
+      for (key, value) in self.get_additional_properties() {
+        let key = v8::String::new(scope, &key).unwrap();
+        let value = match value {
+          PropertyValue::String(value) => {
+            v8::String::new(scope, &value).unwrap().into()
+          }
+          PropertyValue::Number(value) => v8::Number::new(scope, value).into(),
+        };
+        exception_obj.set(scope, key.into(), value);
+      }
+    }
     v8::Global::new(scope, exception)
   }
 }

@@ -224,6 +224,60 @@ impl JsErrorClass for MockError {
   }
 }
 
+#[derive(Debug)]
+struct CodedResolveError;
+
+impl fmt::Display for CodedResolveError {
+  fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+    write!(f, "coded resolution failure")
+  }
+}
+
+impl std::error::Error for CodedResolveError {}
+
+impl JsErrorClass for CodedResolveError {
+  fn get_class(&self) -> Cow<'static, str> {
+    Cow::Borrowed("Error")
+  }
+
+  fn get_message(&self) -> Cow<'static, str> {
+    Cow::Borrowed("coded resolution failure")
+  }
+
+  fn get_additional_properties(&self) -> deno_error::AdditionalProperties {
+    Box::new(std::iter::once((
+      Cow::Borrowed("code"),
+      deno_error::PropertyValue::String(Cow::Borrowed("ERR_CUSTOM_RESOLVE")),
+    )))
+  }
+
+  fn get_ref(&self) -> &(dyn std::error::Error + Send + Sync + 'static) {
+    self
+  }
+}
+
+struct CodedErrorLoader;
+
+impl ModuleLoader for CodedErrorLoader {
+  fn resolve(
+    &self,
+    _specifier: &str,
+    _referrer: &str,
+    _kind: ResolutionKind,
+  ) -> Result<ModuleSpecifier, ModuleLoaderError> {
+    Err(JsErrorBox::from_err(CodedResolveError))
+  }
+
+  fn load(
+    &self,
+    _module_specifier: &ModuleSpecifier,
+    _maybe_referrer: Option<&ModuleLoadReferrer>,
+    _options: ModuleLoadOptions,
+  ) -> ModuleLoadResponse {
+    unreachable!()
+  }
+}
+
 struct DelayedSourceCodeFuture {
   url: String,
   counter: u32,
@@ -1105,6 +1159,41 @@ async fn dyn_import_err() {
     Poll::Ready(())
   })
   .await;
+}
+
+#[tokio::test]
+async fn dyn_import_preserves_resolution_error_code() {
+  let mut runtime = JsRuntime::new(RuntimeOptions {
+    module_loader: Some(Rc::new(CodedErrorLoader)),
+    ..Default::default()
+  });
+
+  runtime
+    .execute_script(
+      "file:///dyn_import_error_code.js",
+      r#"
+      globalThis.dynamicImportErrorCode = import("/missing.js").then(
+        () => "resolved",
+        (error) => error.code,
+      );
+      "#,
+    )
+    .unwrap();
+
+  runtime.run_event_loop(Default::default()).await.unwrap();
+  runtime
+    .execute_script(
+      "file:///assert_dynamic_import_error_code.js",
+      r#"
+      dynamicImportErrorCode.then((code) => {
+        if (code !== "ERR_CUSTOM_RESOLVE") {
+          throw new Error(`Unexpected dynamic import error code: ${code}`);
+        }
+      });
+      "#,
+    )
+    .unwrap();
+  runtime.run_event_loop(Default::default()).await.unwrap();
 }
 
 #[tokio::test]
