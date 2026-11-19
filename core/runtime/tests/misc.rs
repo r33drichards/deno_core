@@ -45,13 +45,13 @@ fn test_execute_script_return_value() {
   let value_global = runtime.execute_script("a.js", "a = 1 + 2").unwrap();
   {
     deno_core::scope!(scope, runtime);
-    let value = value_global.open(scope);
+    let value = v8::Local::new(scope, &value_global);
     assert_eq!(value.integer_value(scope).unwrap(), 3);
   }
   let value_global = runtime.execute_script("b.js", "b = 'foobar'").unwrap();
   {
     deno_core::scope!(scope, runtime);
-    let value = value_global.open(scope);
+    let value = v8::Local::new(scope, &value_global);
     assert!(value.is_string());
     assert_eq!(
       value.to_string(scope).unwrap().to_rust_string_lossy(scope),
@@ -278,13 +278,13 @@ async fn test_resolve_value_generic(
     }
     Ok(Some(v)) => {
       let value = result_global.unwrap();
-      let value = value.open(scope);
+      let value = v8::Local::new(scope, &value);
       assert_eq!(value.integer_value(scope).unwrap(), v as i64);
     }
     Err(e) => {
       let Err(err) = result_global else {
         let value = result_global.unwrap();
-        let value = value.open(scope);
+        let value = v8::Local::new(scope, &value);
         panic!(
           "Expected an error, got {}",
           value.to_rust_string_lossy(scope)
@@ -411,7 +411,7 @@ async fn wasm_streaming_op_invocation_in_import() {
   #[allow(deprecated)]
   let value = runtime.resolve_value(promise).await.unwrap();
   deno_core::scope!(scope, runtime);
-  let val = value.open(scope);
+  let val = v8::Local::new(scope, &value);
   assert!(val.is_object());
 }
 
@@ -1223,7 +1223,7 @@ async fn generic_in_extension_middleware() {
 
   // Check the result
   deno_core::scope!(scope, &mut runtime);
-  let value = value_global.open(scope);
+  let value = v8::Local::new(scope, &value_global);
 
   let result = value.to_rust_string_lossy(scope);
   assert_eq!(result, "Hello World and Hello World");

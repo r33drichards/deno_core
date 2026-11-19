@@ -1119,9 +1119,11 @@ pub fn op_set_wasm_streaming_callback(
 
     let undefined = v8::undefined(scope);
     let rid = serde_v8::to_v8(scope, streaming_rid).unwrap();
-    cb_handle
-      .open(scope)
-      .call(scope, undefined.into(), &[arg, rid]);
+    v8::Local::new(scope, &cb_handle).call(
+      scope,
+      undefined.into(),
+      &[arg, rid],
+    );
   });
   Ok(())
 }

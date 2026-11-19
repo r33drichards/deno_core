@@ -1664,7 +1664,7 @@ impl JsRuntime {
   ) -> impl Future<Output = Result<v8::Global<v8::Value>, Box<JsError>>> + use<>
   {
     v8::tc_scope!(let scope, scope);
-    let cb = function.open(scope);
+    let cb = v8::Local::new(scope, function);
     let this = v8::undefined(scope).into();
     let promise = if args.is_empty() {
       cb.call(scope, this, &[])
@@ -2724,7 +2724,7 @@ impl JsRuntime {
     let run_immediate_callbacks_cb =
       context_state.run_immediate_callbacks_cb.borrow();
     let run_immediate_callbacks_cb =
-      run_immediate_callbacks_cb.as_ref().unwrap().open(tc_scope);
+      v8::Local::new(tc_scope, run_immediate_callbacks_cb.as_ref().unwrap());
 
     run_immediate_callbacks_cb.call(tc_scope, undefined, &[]);
 
@@ -2776,7 +2776,7 @@ impl JsRuntime {
       {
         let set_timer_depth_cb = context_state.js_set_timer_depth_cb.borrow();
         let set_timer_depth_fn =
-          set_timer_depth_cb.as_ref().unwrap().open(scope);
+          v8::Local::new(scope, set_timer_depth_cb.as_ref().unwrap());
         let depth_val = v8::Integer::new(scope, depth as i32);
         set_timer_depth_fn.call(scope, undefined, &[depth_val.into()]);
       }
@@ -2784,7 +2784,7 @@ impl JsRuntime {
       // Call the timer callback directly
       {
         v8::tc_scope!(let tc_scope, scope);
-        let cb = callback.open(tc_scope);
+        let cb = v8::Local::new(tc_scope, &callback);
         cb.call(tc_scope, global_this, &[]);
 
         if let Some(exception) = tc_scope.exception() {
@@ -2795,7 +2795,7 @@ impl JsRuntime {
             let report_exception_cb =
               context_state.js_report_exception_cb.borrow();
             if let Some(report_fn_global) = report_exception_cb.as_ref() {
-              let report_fn = report_fn_global.open(tc_scope);
+              let report_fn = v8::Local::new(tc_scope, report_fn_global);
               let exc_local = v8::Local::new(tc_scope, &exc_global);
               report_fn.call(tc_scope, undefined, &[exc_local]);
             }
@@ -2811,7 +2811,7 @@ impl JsRuntime {
         let has_tick = context_state.has_next_tick_scheduled.get();
         let drain_cb =
           context_state.js_drain_next_tick_and_macrotasks_cb.borrow();
-        let drain_fn = drain_cb.as_ref().unwrap().open(scope);
+        let drain_fn = v8::Local::new(scope, drain_cb.as_ref().unwrap());
         let has_tick_val = v8::Boolean::new(scope, has_tick);
         drain_fn.call(scope, undefined, &[has_tick_val.into()]);
       }
@@ -2822,7 +2822,8 @@ impl JsRuntime {
     // Reset timer depth to 0 after all timers
     {
       let set_timer_depth_cb = context_state.js_set_timer_depth_cb.borrow();
-      let set_timer_depth_fn = set_timer_depth_cb.as_ref().unwrap().open(scope);
+      let set_timer_depth_fn =
+        v8::Local::new(scope, set_timer_depth_cb.as_ref().unwrap());
       let zero = v8::Integer::new(scope, 0);
       set_timer_depth_fn.call(scope, undefined, &[zero.into()]);
     }
@@ -2910,7 +2911,8 @@ impl JsRuntime {
     v8::tc_scope!(let tc_scope, scope);
 
     let resolve_ops_cb = context_state.js_resolve_ops_cb.borrow();
-    let resolve_ops_fn = resolve_ops_cb.as_ref().unwrap().open(tc_scope);
+    let resolve_ops_fn =
+      v8::Local::new(tc_scope, resolve_ops_cb.as_ref().unwrap());
     resolve_ops_fn.call(tc_scope, undefined, args.as_slice());
 
     if let Some(exception) = tc_scope.exception() {
@@ -2942,7 +2944,7 @@ impl JsRuntime {
         .borrow()
         .as_ref()
       {
-        let function = handler.open(scope);
+        let function = v8::Local::new(scope, handler);
         let args = [
           v8::Local::new(scope, promise).into(),
           v8::Local::new(scope, result),
@@ -2978,7 +2980,7 @@ impl JsRuntime {
 
     let handle_rejections_cb = context_state.js_handle_rejections_cb.borrow();
     let handle_rejections_fn =
-      handle_rejections_cb.as_ref().unwrap().open(tc_scope);
+      v8::Local::new(tc_scope, handle_rejections_cb.as_ref().unwrap());
     handle_rejections_fn.call(tc_scope, undefined, args.as_slice());
 
     if let Some(exception) = tc_scope.exception() {
@@ -2999,7 +3001,7 @@ impl JsRuntime {
     v8::tc_scope!(let tc_scope, scope);
 
     let drain_cb = context_state.js_drain_next_tick_and_macrotasks_cb.borrow();
-    let drain_fn = drain_cb.as_ref().unwrap().open(tc_scope);
+    let drain_fn = v8::Local::new(tc_scope, drain_cb.as_ref().unwrap());
     let has_tick_val = v8::Boolean::new(tc_scope, has_tick_scheduled);
     drain_fn.call(tc_scope, undefined, &[has_tick_val.into()]);
 
