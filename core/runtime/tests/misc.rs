@@ -1443,7 +1443,7 @@ async fn global_template_middleware() {
     _key: v8::Local<'s, v8::Name>,
     _value: v8::Local<'s, v8::Value>,
     _args: v8::PropertyCallbackArguments<'s>,
-    _rv: v8::ReturnValue<()>,
+    _rv: v8::ReturnValue<v8::Boolean>,
   ) -> v8::Intercepted {
     CALLS.lock().push("setter".to_string());
     v8::Intercepted::kNo
@@ -1454,7 +1454,7 @@ async fn global_template_middleware() {
     _key: v8::Local<'s, v8::Name>,
     _descriptor: &v8::PropertyDescriptor,
     _args: v8::PropertyCallbackArguments<'s>,
-    _rv: v8::ReturnValue<()>,
+    _rv: v8::ReturnValue<v8::Boolean>,
   ) -> v8::Intercepted {
     CALLS.lock().push("definer".to_string());
     v8::Intercepted::kNo
