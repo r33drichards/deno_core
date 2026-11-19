@@ -18,7 +18,6 @@ use std::rc::Rc;
 use std::sync::Arc;
 use std::sync::atomic::AtomicUsize;
 use std::sync::atomic::Ordering;
-use v8::fast_api::CFunction;
 
 pub type PromiseId = i32;
 pub type OpId = u16;
@@ -92,7 +91,6 @@ pub struct OpCtx {
   pub enable_stack_trace: bool,
 
   pub(crate) decl: OpDecl,
-  pub(crate) fast_fn_info: Option<CFunction>,
   pub(crate) metrics_fn: Option<OpMetricsFn>,
 
   op_driver: Rc<OpDriverImpl>,
@@ -111,23 +109,12 @@ impl OpCtx {
     metrics_fn: Option<OpMetricsFn>,
     enable_stack_trace: bool,
   ) -> Self {
-    // If we want metrics for this function, create the fastcall `CFunctionInfo` from the metrics
-    // `CFunction`. For some extremely fast ops, the parameter list may change for the metrics
-    // version and require a slightly different set of arguments (for example, it may need the fastcall
-    // callback information to get the `OpCtx`).
-    let fast_fn_info = if metrics_fn.is_some() {
-      decl.fast_fn_with_metrics.map(|f| f[0])
-    } else {
-      decl.fast_fn.map(|f| f[0])
-    };
-
     Self {
       id,
       state,
       runtime_state,
       decl,
       op_driver,
-      fast_fn_info,
       isolate,
       metrics_fn,
       enable_stack_trace,
@@ -144,53 +131,29 @@ impl OpCtx {
     self.metrics_fn.is_some()
   }
 
-  /// Generates four external references for each op. If an op does not have a fastcall, it generates
-  /// "null" slots to avoid changing the size of the external references array.
-  pub const fn external_references(&self) -> [v8::ExternalReference; 4] {
+  // V8 snapshots store a pointer to the registered CFunction overload.
+  pub const fn external_references(&self) -> [v8::ExternalReference; 3] {
     extern "C" fn placeholder() {}
 
-    let ctx_ptr = v8::ExternalReference {
-      pointer: self as *const OpCtx as _,
-    };
-    let null = v8::ExternalReference {
-      pointer: placeholder as _,
-    };
-
-    if self.metrics_enabled() {
-      let slow_fn = v8::ExternalReference {
-        function: self.decl.slow_fn_with_metrics,
-      };
-      if let (Some(fast_fn), Some(fast_fn_info)) =
-        (self.decl.fast_fn_with_metrics, self.fast_fn_info)
-      {
-        let fast_fn = v8::ExternalReference {
-          pointer: fast_fn[0].address() as _,
-        };
-        let fast_info = v8::ExternalReference {
-          type_info: fast_fn_info.type_info(),
-        };
-        [ctx_ptr, slow_fn, fast_fn, fast_info]
-      } else {
-        [ctx_ptr, slow_fn, null, null]
-      }
+    let (slow_fn, fast_fn) = if self.metrics_enabled() {
+      (
+        self.decl.slow_fn_with_metrics,
+        self.decl.fast_fn_with_metrics,
+      )
     } else {
-      let slow_fn = v8::ExternalReference {
-        function: self.decl.slow_fn,
-      };
-      if let (Some(fast_fn), Some(fast_fn_info)) =
-        (self.decl.fast_fn, self.fast_fn_info)
-      {
-        let fast_fn = v8::ExternalReference {
-          pointer: fast_fn[0].address() as _,
-        };
-        let fast_info = v8::ExternalReference {
-          type_info: fast_fn_info.type_info(),
-        };
-        [ctx_ptr, slow_fn, fast_fn, fast_info]
-      } else {
-        [ctx_ptr, slow_fn, null, null]
-      }
-    }
+      (self.decl.slow_fn, self.decl.fast_fn)
+    };
+    let overload = match fast_fn {
+      Some(overloads) => overloads.as_ptr() as _,
+      None => placeholder as _,
+    };
+    [
+      v8::ExternalReference {
+        pointer: self as *const OpCtx as _,
+      },
+      v8::ExternalReference { function: slow_fn },
+      v8::ExternalReference { pointer: overload },
+    ]
   }
 
   pub(crate) fn op_driver(&self) -> &OpDriverImpl {
