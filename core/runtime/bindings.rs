@@ -599,7 +599,7 @@ pub(crate) fn op_ctx_template<'s, 'i>(
       .length(op_ctx.decl.arg_count as i32);
 
   let template = if let Some(fast_function) = fast_fn {
-    builder.build_fast(scope, &[fast_function])
+    builder.build_fast(scope, fast_function)
   } else {
     builder.build(scope)
   };

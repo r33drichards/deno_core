@@ -207,9 +207,9 @@ pub struct OpDecl {
   /// The slow dispatch call with metrics enabled. If metrics are enabled, the `v8::Function` is created with this callback.
   pub(crate) slow_fn_with_metrics: OpFnRef,
   /// The fast dispatch call. If metrics are disabled, the `v8::Function`'s fastcall is created with this callback.
-  pub(crate) fast_fn: Option<CFunction>,
+  pub(crate) fast_fn: Option<&'static [CFunction; 1]>,
   /// The fast dispatch call with metrics enabled. If metrics are enabled, the `v8::Function`'s fastcall is created with this callback.
-  pub(crate) fast_fn_with_metrics: Option<CFunction>,
+  pub(crate) fast_fn_with_metrics: Option<&'static [CFunction; 1]>,
   /// Any metadata associated with this op.
   pub metadata: OpMetadata,
 }
@@ -228,8 +228,8 @@ impl OpDecl {
     slow_fn: OpFnRef,
     slow_fn_with_metrics: OpFnRef,
     accessor_type: AccessorType,
-    fast_fn: Option<CFunction>,
-    fast_fn_with_metrics: Option<CFunction>,
+    fast_fn: Option<&'static [CFunction; 1]>,
+    fast_fn_with_metrics: Option<&'static [CFunction; 1]>,
     metadata: OpMetadata,
   ) -> Self {
     #[allow(deprecated)]
@@ -264,8 +264,8 @@ impl OpDecl {
       // ideally we would add a fallback that would throw, but it's unclear
       // if disabled op (that throws in JS) would ever get optimized to become
       // a fast function.
-      fast_fn: self.fast_fn.map(|_| NOOP_FN),
-      fast_fn_with_metrics: self.fast_fn_with_metrics.map(|_| NOOP_FN),
+      fast_fn: self.fast_fn.map(|_| const { &[NOOP_FN] }),
+      fast_fn_with_metrics: self.fast_fn_with_metrics.map(|_| const { &[NOOP_FN] }),
       ..self
     }
   }
@@ -281,7 +281,7 @@ impl OpDecl {
   }
 
   #[doc(hidden)]
-  pub const fn fast_fn(&self) -> CFunction {
+  pub const fn fast_fn(&self) -> &'static [CFunction; 1] {
     let Some(f) = self.fast_fn else {
       panic!("Not a fast function");
     };
@@ -289,7 +289,7 @@ impl OpDecl {
   }
 
   #[doc(hidden)]
-  pub const fn fast_fn_with_metrics(&self) -> CFunction {
+  pub const fn fast_fn_with_metrics(&self) -> &'static [CFunction; 1] {
     let Some(f) = self.fast_fn_with_metrics else {
       panic!("Not a fast function");
     };

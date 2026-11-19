@@ -407,8 +407,8 @@ pub(crate) fn generate_dispatch_fast(
       )
     })?;
     return Ok(Some((
-      quote!(#alternative().fast_fn()),
-      quote!(#alternative().fast_fn_with_metrics()),
+      quote!(#alternative().fast_fn()[0]),
+      quote!(#alternative().fast_fn_with_metrics()[0]),
       quote!(),
     )));
   }

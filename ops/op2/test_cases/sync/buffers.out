@@ -16,7 +16,19 @@ const fn op_buffers() -> ::deno_core::_ops::OpDecl {
             Self::v8_fn_ptr as _,
             Self::v8_fn_ptr_metrics as _,
             ::deno_core::AccessorType::None,
-            Some({
+            Some(&Self::FAST_OVERLOADS),
+            Some(&Self::FAST_OVERLOADS_METRICS),
+            ::deno_core::OpMetadata {
+                ..::deno_core::OpMetadata::default()
+            },
+        );
+    }
+    impl op_buffers {
+        pub const fn name() -> &'static str {
+            <Self as deno_core::_ops::Op>::NAME
+        }
+        const FAST_OVERLOADS: [::deno_core::v8::fast_api::CFunction; 1] = [
+            {
                 use deno_core::v8::fast_api::Type as CType;
                 use deno_core::v8;
                 deno_core::v8::fast_api::CFunction::new(
@@ -34,8 +46,10 @@ const fn op_buffers() -> ::deno_core::_ops::OpDecl {
                         deno_core::v8::fast_api::Int64Representation::BigInt,
                     ),
                 )
-            }),
-            Some({
+            },
+        ];
+        const FAST_OVERLOADS_METRICS: [::deno_core::v8::fast_api::CFunction; 1] = [
+            {
                 use deno_core::v8::fast_api::Type as CType;
                 use deno_core::v8;
                 deno_core::v8::fast_api::CFunction::new(
@@ -53,16 +67,8 @@ const fn op_buffers() -> ::deno_core::_ops::OpDecl {
                         deno_core::v8::fast_api::Int64Representation::BigInt,
                     ),
                 )
-            }),
-            ::deno_core::OpMetadata {
-                ..::deno_core::OpMetadata::default()
             },
-        );
-    }
-    impl op_buffers {
-        pub const fn name() -> &'static str {
-            <Self as deno_core::_ops::Op>::NAME
-        }
+        ];
         #[allow(clippy::too_many_arguments)]
         extern "C" fn v8_fn_ptr_fast_metrics<'s>(
             this: deno_core::v8::Local<deno_core::v8::Object>,
@@ -385,7 +391,19 @@ const fn op_buffers_32() -> ::deno_core::_ops::OpDecl {
             Self::v8_fn_ptr as _,
             Self::v8_fn_ptr_metrics as _,
             ::deno_core::AccessorType::None,
-            Some({
+            Some(&Self::FAST_OVERLOADS),
+            Some(&Self::FAST_OVERLOADS_METRICS),
+            ::deno_core::OpMetadata {
+                ..::deno_core::OpMetadata::default()
+            },
+        );
+    }
+    impl op_buffers_32 {
+        pub const fn name() -> &'static str {
+            <Self as deno_core::_ops::Op>::NAME
+        }
+        const FAST_OVERLOADS: [::deno_core::v8::fast_api::CFunction; 1] = [
+            {
                 use deno_core::v8::fast_api::Type as CType;
                 use deno_core::v8;
                 deno_core::v8::fast_api::CFunction::new(
@@ -403,8 +421,10 @@ const fn op_buffers_32() -> ::deno_core::_ops::OpDecl {
                         deno_core::v8::fast_api::Int64Representation::BigInt,
                     ),
                 )
-            }),
-            Some({
+            },
+        ];
+        const FAST_OVERLOADS_METRICS: [::deno_core::v8::fast_api::CFunction; 1] = [
+            {
                 use deno_core::v8::fast_api::Type as CType;
                 use deno_core::v8;
                 deno_core::v8::fast_api::CFunction::new(
@@ -422,16 +442,8 @@ const fn op_buffers_32() -> ::deno_core::_ops::OpDecl {
                         deno_core::v8::fast_api::Int64Representation::BigInt,
                     ),
                 )
-            }),
-            ::deno_core::OpMetadata {
-                ..::deno_core::OpMetadata::default()
             },
-        );
-    }
-    impl op_buffers_32 {
-        pub const fn name() -> &'static str {
-            <Self as deno_core::_ops::Op>::NAME
-        }
+        ];
         #[allow(clippy::too_many_arguments)]
         extern "C" fn v8_fn_ptr_fast_metrics<'s>(
             this: deno_core::v8::Local<deno_core::v8::Object>,

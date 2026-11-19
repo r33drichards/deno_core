@@ -116,9 +116,9 @@ impl OpCtx {
     // version and require a slightly different set of arguments (for example, it may need the fastcall
     // callback information to get the `OpCtx`).
     let fast_fn_info = if metrics_fn.is_some() {
-      decl.fast_fn_with_metrics
+      decl.fast_fn_with_metrics.map(|f| f[0])
     } else {
-      decl.fast_fn
+      decl.fast_fn.map(|f| f[0])
     };
 
     Self {
@@ -164,7 +164,7 @@ impl OpCtx {
         (self.decl.fast_fn_with_metrics, self.fast_fn_info)
       {
         let fast_fn = v8::ExternalReference {
-          pointer: fast_fn.address() as _,
+          pointer: fast_fn[0].address() as _,
         };
         let fast_info = v8::ExternalReference {
           type_info: fast_fn_info.type_info(),
@@ -181,7 +181,7 @@ impl OpCtx {
         (self.decl.fast_fn, self.fast_fn_info)
       {
         let fast_fn = v8::ExternalReference {
-          pointer: fast_fn.address() as _,
+          pointer: fast_fn[0].address() as _,
         };
         let fast_info = v8::ExternalReference {
           type_info: fast_fn_info.type_info(),

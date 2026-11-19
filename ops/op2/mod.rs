@@ -339,7 +339,7 @@ pub(crate) fn generate_op2(
 
   let mut fast_generator_state = base_generator_state.clone();
 
-  let (fast_definition, fast_definition_metrics, fast_fn) =
+  let (fast_definition, fast_definition_metrics, fast_fn, fast_overloads) =
     match generate_dispatch_fast(&config, &mut fast_generator_state, &signature)
       .map_err(|e| Op2Error::from(e).with_default_span(sig_span))?
     {
@@ -358,12 +358,16 @@ pub(crate) fn generate_op2(
         }
         // nofast requires the function to be valid for fast
         if config.nofast || config.getter || config.setter {
-          (quote!(None), quote!(None), quote!())
+          (quote!(None), quote!(None), quote!(), quote!())
         } else {
           (
-            quote!(Some({#fast_definition})),
-            quote!(Some({#fast_metrics_definition})),
+            quote!(Some(&Self::FAST_OVERLOADS)),
+            quote!(Some(&Self::FAST_OVERLOADS_METRICS)),
             fast_fn,
+            quote! {
+              const FAST_OVERLOADS: [::deno_core::v8::fast_api::CFunction; 1] = [{#fast_definition}];
+              const FAST_OVERLOADS_METRICS: [::deno_core::v8::fast_api::CFunction; 1] = [{#fast_metrics_definition}];
+            },
           )
         }
       }
@@ -380,7 +384,7 @@ pub(crate) fn generate_op2(
             Op2ErrorKind::ShouldNotBeFast("nofast"),
           ));
         }
-        (quote!(None), quote!(None), quote!())
+        (quote!(None), quote!(None), quote!(), quote!())
       }
     };
 
@@ -473,6 +477,7 @@ pub(crate) fn generate_op2(
           <Self as deno_core::_ops::Op>::NAME
         }
 
+        #fast_overloads
         #fast_fn
         #slow_fn
       }
